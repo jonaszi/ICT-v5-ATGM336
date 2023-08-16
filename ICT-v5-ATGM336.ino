@@ -13,17 +13,13 @@
 #include <JTEncode.h>
 #include <TimeLib.h>
 #include <TinyGPS++.h>
-#include <avr/power.h>
 
-#define WSPR_CTC                1334   // CTC value for WSPR - 10672 @ 16Mhz //5336 @ 8Mhz //2668 @ 4Mhz //1334 @ 2Mhz //667 @ 1Mhz
+#define WSPR_CTC                2668   // CTC value for WSPR - 10672 @ 16Mhz //5336 @ 8Mhz //2668 @ 4Mhz //1334 @ 2Mhz //667 @ 1Mhz
 #define WSPR_TONE_SPACING       146    // 146 ~1.46 Hz
 
-//#define WSPR_FREQ     7040185UL
-//#define WSPR_FREQ     10140285UL          
 #define WSPR_FREQ     14097192UL      // <<<<< SET TX FREQUENCY HERE
 
 // Enumerations
-enum mode {MODE_WSPR};
 TinyGPSPlus gps;
 Si5351 si5351;
 JTEncode jtencode;
@@ -47,17 +43,13 @@ int gps_speed = 0;
 volatile bool proceed = false;
 
 #include "TelemFunctions.h" // Various telemetry functions
-#include "Timing2.h" // Scheduling
+#include "Timing.h" // Scheduling
 
 ISR(TIMER1_COMPA_vect)
 { proceed = true; }
 
 void setup()
 {
-  //clock_prescale_set(clock_div_2);
-  clock_prescale_set(clock_div_4);
-  //clock_prescale_set(clock_div_8);
-
   sodaq_wdt_enable(WDT_PERIOD_8X);
   
   pinMode(3, OUTPUT); digitalWrite(3, HIGH); //gps pin 5 on
@@ -103,8 +95,15 @@ void setup()
   {
     sodaq_wdt_reset();
     while (Serial.available() > 0)
-    if (gps.encode(Serial.read())) // GPS related functions need to be in here to work with tinyGPS Plus library
-    if (timeStatus() == timeNotSet) // Only sets time if already not done previously
-  { setGPStime(); } // Sets system time to GPS UTC time for sync
-    if (gps.location.isValid()) TXtiming(); // Process timing 
+    {
+      if (gps.encode(Serial.read()) && (timeStatus() == timeNotSet))  // GPS related functions need to be in here to work with tinyGPS Plus library
+      {                                                               // Only sets time if already not done previously
+        setGPStime();   // Sets system time to GPS UTC time for sync
+      }
+    }
+    
+    if (gps.location.isValid()) 
+    {
+      TXtiming(); // Process timing 
+    }
   }
