@@ -3,40 +3,49 @@
 */
 
 void setGPStime() // Sets the system time from the GPS
-  {
+{
   if (gps.time.isValid())
   {
-    Hour = gps.time.hour();
-    Minute = gps.time.minute();
-    Second = gps.time.second();
-    setTime(Hour, Minute, Second, 1, 1, 2000); // (hr,min,sec,day,month,yr)
+    DEBUGPRINT(5);
+    byte hour = gps.time.hour();
+    byte minute = gps.time.minute();
+    byte second = gps.time.second();
+    DEBUGVALUE(6,hour);
+    DEBUGVALUE(7,minute);
+    DEBUGVALUE(8,second);
+   
+    setTime(hour, minute, second, 1, 1, 2000); // (hr,min,sec,day,month,yr)
   }
-  }
+}
 
 void loc4calc() // Determine the locator from the GPS data
 {
+  DEBUGPRINT(9);
   lon = (gps.location.lng() * 100000) + 18000000L;
   lat = (gps.location.lat() * 100000) +  9000000L;
-  char MH[4] = {'A', 'A', '0', '0'};
-  MH[0] +=  lon / 2000000;
-  MH[1] +=  lat / 1000000;
-  MH[2] += (lon % 2000000) / 200000;
-  MH[3] += (lat % 1000000) / 100000;
-  String loc4_txt = "";
-  int i = 0;
-  while (i < 4) {
-    loc4_txt += MH[i];
-    i++;
-  }
-  loc4_txt.toCharArray(loc4, 5);
-  }
+
+  loc4[0] = 'A';
+  loc4[1] = 'A';
+  loc4[2] = '0';
+  loc4[3] = '0';
+  
+  loc4[0] +=  lon / 2000000;
+  loc4[1] +=  lat / 1000000;
+  loc4[2] += (lon % 2000000) / 200000;
+  loc4[3] += (lat % 1000000) / 100000;
+
+  DEBUGSTRING(10, loc4);
+}
 
 void call_telem() // Determine the telemetry callsign
-  {
+{
+  DEBUGPRINT(11);
   alt_meters = gps.altitude.meters();
+  DEBUGVALUE(12, alt_meters);
   char MH[2] = {'A', 'A'};
   MH[0] += ((lon % 200000) / 8333);
   MH[1] += ((lat % 100000) / 4166);
+  DEBUGSTRING(13, MH);
   call_telemetry[0] = 'Q'; // telemetry channel 11
   call_telemetry[2] = '3';
   int a = MH[0] - 'A';
@@ -45,10 +54,16 @@ void call_telem() // Determine the telemetry callsign
   int d = int(alt_meters / 20);
   long e = (long)(1068L * c + d);
   long f = float(e / 17576L);
+  
   if (f < 10)
-  call_telemetry[1] = f + '0';
+  {
+    call_telemetry[1] = f + '0';
+  }
   else
-  call_telemetry[1] = f - 10 + 'A';
+  {
+    call_telemetry[1] = f - 10 + 'A';
+  }
+  
   long g = e - f * 17576L;
   int h = int(g / 676);
   call_telemetry[3] = h + 'A';
@@ -62,8 +77,11 @@ void call_telem() // Determine the telemetry callsign
 
 void loc_dbm_telem() // Determine the locator and dBm value for the telemetry transmission
 {
+  DEBUGPRINT(14);
   Sats =  gps.satellites.value();
+  DEBUGVALUE(15, Sats);
   gps_speed = gps.speed.knots();
+  DEBUGVALUE(16, gps_speed);
   int wADC = 0;
   int temp = 0;
   float volt = 0;
@@ -71,19 +89,20 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   ADMUX = (_BV(REFS1) | _BV(REFS0) | _BV(MUX3));
   ADCSRA |= _BV(ADEN);
   delay(20);
-  for (int i=0;i<5;i++)
+  for (int i = 0; i < 5; i++)
   {
     ADCSRA |= _BV(ADSC);
     while (bit_is_set(ADCSRA, ADSC));
     wADC = wADC + ADCW;
     delay(20);
   }
-  
+
   wADC = wADC / 5;
   temp = (wADC - 304.21 ) / 1.124;
+  DEBUGVALUE(17, temp);
   delay(20);
   analogReference(INTERNAL);
-  for (int i=0;i<5;i++)
+  for (int i = 0; i < 5; i++)
   {
     sensorVolt = sensorVolt + analogRead(3); //analogRead(0) for the old boards
   }
@@ -91,15 +110,21 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   volt = sensorVolt * 1.1f;
   volt = volt / 1023.0f;
   volt = volt * 4.18f;
+  DEBUGVALUE(18, volt);
   if (volt < 3.0) volt = 3.0;
   if (volt > 4.95) volt = 4.95;
   if (temp < -49) temp = -49;
   if (temp > 39) temp = 39;
   int GPS = 0;
   if ((lon != oldlon) || (lat != oldlat))
-  GPS = 1;
+  {
+    GPS = 1;
+  }
   else
-  GPS = 0;
+  {
+    GPS = 0;
+  }
+  
   oldlon = lon;
   oldlat = lat;
   if (Sats < 5) Sats = 0; else Sats = 1;
@@ -150,6 +175,7 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
 
 void setModeWSPR()
 {
+  DEBUGPRINT(19);
   symbol_count = WSPR_SYMBOL_COUNT;
   tone_spacing = WSPR_TONE_SPACING;
   memset(tx_buffer, 0, 255); // Clears Tx buffer from previous operation.
@@ -158,6 +184,7 @@ void setModeWSPR()
 
 void setModeWSPR_telem()
 {
+  DEBUGPRINT(20);
   symbol_count = WSPR_SYMBOL_COUNT;
   tone_spacing = WSPR_TONE_SPACING;
   memset(tx_buffer, 0, 255); // Clears Tx buffer from previous operation.
@@ -166,22 +193,24 @@ void setModeWSPR_telem()
 
 void encode() // Loop through the string, transmitting one character at a time
 {
+  DEBUGPRINT(21);
   uint8_t i;
   for (i = 0; i < symbol_count; i++) // Now transmit the channel symbols
-{
+  {
     //si5351.output_enable(SI5351_CLK0, 1); // Turn off the CLK0 output
     //si5351.set_freq_manual((freq * 100) + (tx_buffer[i] * tone_spacing),87500000000ULL,SI5351_CLK0);
-    si5351.set_freq((freq * 100) + (tx_buffer[i] * tone_spacing),SI5351_CLK0);
+    si5351.set_freq((freq * 100) + (tx_buffer[i] * tone_spacing), SI5351_CLK0);
     proceed = false;
     while (!proceed);
     sodaq_wdt_reset();
-}
+  }
   si5351.output_enable(SI5351_CLK0, 0); // Turn off the CLK0 output
   si5351.set_clock_pwr(SI5351_CLK0, 0);  // Turn off the CLK0 clock
 }
 
 void rf_on() // Turn on the high-side switch, activating the transmitter
 {
+  DEBUGPRINT(22);
   digitalWrite(2, HIGH);
   digitalWrite(4, HIGH);
   digitalWrite(5, HIGH);
@@ -199,6 +228,7 @@ void rf_on() // Turn on the high-side switch, activating the transmitter
 
 void rf_off() // Turn off the high-side switch
 {
+  DEBUGPRINT(23);
   digitalWrite(2, LOW);
   digitalWrite(4, LOW);
   digitalWrite(5, LOW);
@@ -207,21 +237,23 @@ void rf_off() // Turn off the high-side switch
 }
 
 void GPS_VCC_on()
-  {
+{
+  DEBUGPRINT(24);
   Serial.begin(9600);
   delay(2);
   digitalWrite(A0, HIGH);
   digitalWrite(A1, HIGH);
   digitalWrite(A2, HIGH);
   digitalWrite(A3, HIGH);
-  }
+}
 
 void GPS_VCC_off()
-  {
+{
+  DEBUGPRINT(25);
   Serial.end();
   delay(2);
   digitalWrite(A0, LOW);
   digitalWrite(A1, LOW);
   digitalWrite(A2, LOW);
   digitalWrite(A3, LOW);
-  }
+}
