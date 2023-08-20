@@ -75,10 +75,13 @@ void setup()
 {
   #if DEBUG_LEVEL >= 1
   setupSoftwareSerialLogging();
-  DEBUGPRINT(1);
   #endif
+
+  DEBUGPRINT(1);
   
   sodaq_wdt_enable(WDT_PERIOD_8X);
+
+  setSyncProvider(0); // make sure no sync provider is called
 
   setupRfPins();
   rf_off();
@@ -112,6 +115,8 @@ void loop()
     TXtiming(); // Process timing
   }
 }
+
+#if DEBUG_LEVEL >= 1
 
 inline void setupSoftwareSerialLogging()
 {
@@ -149,6 +154,8 @@ void logTime()
   debugSerial.print(second());
   debugSerial.print(" #");
 }
+
+#endif
 
 inline void setupRfPins()
 {
