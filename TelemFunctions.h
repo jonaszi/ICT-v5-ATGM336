@@ -75,7 +75,7 @@ void call_telem() // Determine the telemetry callsign
   call_telemetry[5] = l + 'A';
 }
 
-float readVcc()
+inline float readVcc()
 {
   // Read 1.1V reference against AVcc
   // set the reference to Vcc and the measurement to the internal 1.1V reference
@@ -104,8 +104,6 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   DEBUGVALUE(16, gps_speed);
   int wADC = 0;
   int temp = 0;
-  float volt = 0;
-  int sensorVolt = 0;
   ADMUX = (_BV(REFS1) | _BV(REFS0) | _BV(MUX3));
   ADCSRA |= _BV(ADEN);
   delay(20);
@@ -121,19 +119,9 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   temp = (wADC - 304.21 ) / 1.124;
   DEBUGVALUE(17, temp);
   delay(20);
-  analogReference(INTERNAL);
-  for (int i = 0; i < 5; i++)
-  {
-    sensorVolt = sensorVolt + analogRead(3); //analogRead(0) for the old boards
-  }
-  sensorVolt = sensorVolt / 5;
-  volt = sensorVolt * 1.1f;
-  volt = volt / 1023.0f;
-  volt = volt * 4.18f;
-  DEBUGVALUE(18, volt);
 
-  float volt2 = readVcc();
-  DEBUGVALUE(18, volt2);
+  float volt = readVcc();
+  DEBUGVALUE(18, volt);
   
   if (volt < 3.0) volt = 3.0;
   if (volt > 4.95) volt = 4.95;
