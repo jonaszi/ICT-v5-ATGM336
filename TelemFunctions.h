@@ -4,7 +4,7 @@
 
 void setGPStime() // Sets the system time from the GPS
 {
-  if (gps.time.isValid())
+  if (gps.date.isValid() && gps.time.isValid() && (gps.date.year() > 2022))
   {
     DEBUGPRINT(5);
     byte hour = gps.time.hour();
@@ -75,6 +75,26 @@ void call_telem() // Determine the telemetry callsign
   call_telemetry[5] = l + 'A';
 }
 
+float readVcc()
+{
+  // Read 1.1V reference against AVcc
+  // set the reference to Vcc and the measurement to the internal 1.1V reference
+  ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
+ 
+  delay(2); // Wait for Vref to settle
+  ADCSRA |= _BV(ADSC); // Start conversion
+  while (bit_is_set(ADCSRA,ADSC)); // measuring
+ 
+  uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH  
+  uint8_t high = ADCH; // unlocks both
+ 
+  long result = (high<<8) | low;
+ 
+  result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
+  float volts = result / 1000.0; // in V
+  return volts;
+}
+
 void loc_dbm_telem() // Determine the locator and dBm value for the telemetry transmission
 {
   DEBUGPRINT(14);
@@ -111,6 +131,10 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   volt = volt / 1023.0f;
   volt = volt * 4.18f;
   DEBUGVALUE(18, volt);
+
+  float volt2 = readVcc();
+  DEBUGVALUE(18, volt2);
+  
   if (volt < 3.0) volt = 3.0;
   if (volt > 4.95) volt = 4.95;
   if (temp < -49) temp = -49;

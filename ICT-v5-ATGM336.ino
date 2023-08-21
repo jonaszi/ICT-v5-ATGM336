@@ -111,7 +111,6 @@ void loop()
 
   if (gps.location.isValid())
   {
-    DEBUGPRINT(4);
     TXtiming(); // Process timing
   }
 }
