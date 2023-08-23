@@ -121,10 +121,12 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   delay(20);
 
   float volt = readVcc();
-  DEBUGVALUE(18, volt);
+  DEBUGVALUE(18, volt);  
+  volt = constrain(volt, 1.8, 3.75);
+  float batt_raw = map(volt*100, 1.8*100, 3.75*100, 0, 39); // map only works with int type
+  batt_raw = constrain(batt_raw, 0, 39);
+  DEBUGVALUE(31, batt_raw);
   
-  if (volt < 3.0) volt = 3.0;
-  if (volt > 4.95) volt = 4.95;
   if (temp < -49) temp = -49;
   if (temp > 39) temp = 39;
   int GPS = 0;
@@ -142,11 +144,7 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   if (Sats < 5) Sats = 0; else Sats = 1;
   int temp_raw = (int)(1024L * (temp * 0.01 + 2.73)) / 5;
   temp_raw = (int)(temp_raw - 457) / 2;
-  float batt_raw = (int)(1024L * volt) / 5;
-  batt_raw = (batt_raw - 614) / 10;
-  float round_number = round(batt_raw);
-  if (round_number > batt_raw) round_number = round_number - 1;
-  batt_raw = (int)round_number;
+  
   long x = (temp_raw * 40L ) + batt_raw;
   long y = (x * 42L) + (int)gps_speed / 2;
   long z = (y * 2L) + (int)GPS;
