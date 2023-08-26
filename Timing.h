@@ -1,61 +1,82 @@
+void sendWsprMessage(bool isTelemetry)
+{
+  DEBUGPRINT(30);
+  if (telemetry_set)
+  {
+    DEBUGPRINT(32);
+    GPS_VCC_off();
+    delay(10);
+    rf_on();
+    freq = WSPR_FREQ;
+    if (isTelemetry)
+    {
+      DEBUGPRINT(33);
+      setModeWSPR_telem(); // set WSPR telemetry mode
+    }
+    else
+    {
+      DEBUGPRINT(34);
+      setModeWSPR(); // set WSPR standard mode
+    }
+    encode(); // begin radio transmission
+    rf_off();
+    delay(5);
+    GPS_VCC_on();
+  }
+}
+
+void calculateTelemetry()
+{
+  DEBUGPRINT(28);
+  loc4calc(); // Get position and update 4-char locator, 6-char locator and last 2 chars of 8-char locator
+  call_telem(); // Update WSPR telemetry callsign based on previous information : position and altitude in meters
+  loc_dbm_telem(); // Update WSPR telemetry locator and dbm. Get temperature, voltage, speed in knots, GPS status and sats number
+  telemetry_set = true;
+}
+
+inline void invalidateTelemetry()
+{
+  DEBUGPRINT(29);
+  telemetry_set = false;
+}
+
 void TXtiming() // Timing
 {
   // run additional scripts here to generate data prior to TX if there is a large delay involved.
-  if ((timeStatus() == timeSet) && (second() == 0) && (minute() >= 0))
+  if ((timeStatus() == timeSet) && (second() == 0))
   {
     DEBUGPRINT(26);
     setGPStime();
-    if ((minute() % 10 == 0) && (second() <= 0)) // TX WSPR standard message
-    {
-      DEBUGPRINT(27);
-      telemetry_set = true;
-      loc4calc(); // Get position and update 4-char locator, 6-char locator and last 2 chars of 8-char locator
-      call_telem(); // Update WSPR telemetry callsign based on previous information : position and altitude in meters
-      loc_dbm_telem(); // Update WSPR telemetry locator and dbm. Get temperature, voltage, speed in knots, GPS status and sats number
-      GPS_VCC_off(); delay(10);
-      rf_on();
-      freq = WSPR_FREQ;
-      setModeWSPR(); // set WSPR standard mode
-      encode(); // begin radio transmission
-      rf_off(); delay(5);
-      GPS_VCC_on();
-    }
 
-    else if ((minute() % 10 == 2) && (second() <= 0) && (telemetry_set == true))    // TX WSPR telemetry message
+    if (second() == 0)
     {
-      DEBUGPRINT(28);
-      GPS_VCC_off(); delay(10);
-      rf_on();
-      freq = WSPR_FREQ;
-      setModeWSPR_telem(); // set WSPR telemetry mode
-      encode(); // begin radio transmission
-      rf_off(); delay(5);
-      GPS_VCC_on();
-    }
+      int minute10 = minute() % 10;
 
-    else if ((minute() % 10 == 4) && (second() <= 0) && (telemetry_set == true))    // TX WSPR standard message
-    {
-      DEBUGPRINT(29);
-      GPS_VCC_off(); delay(10);
-      rf_on();
-      freq = WSPR_FREQ;
-      setModeWSPR(); // set WSPR standard mode
-      encode(); // begin radio transmission
-      rf_off(); delay(5);
-      GPS_VCC_on();
-    }
+      DEBUGVALUE(27, minute10);
 
-    else if ((minute() % 10 == 6) && (second() <= 0) && (telemetry_set == true))    // TX WSPR standard message
-    {
-      DEBUGPRINT(30);
-      GPS_VCC_off(); delay(10);
-      rf_on();
-      freq = WSPR_FREQ;
-      setModeWSPR(); // set WSPR standard mode
-      encode(); // begin radio transmission
-      rf_off(); delay(5);
-      GPS_VCC_on();
-      telemetry_set = false;
+      switch (minute10)
+      {
+        case 0: calculateTelemetry();
+          sendWsprMessage(false);
+          break;
+
+        case 1: break;
+
+        case 2: sendWsprMessage(true);
+          break;
+
+        case 3: break;
+        case 4: sendWsprMessage(false);
+          break;
+        case 5: break;
+        case 6: sendWsprMessage(false);
+          invalidateTelemetry();
+          break;
+        case 7: break;
+        case 8: break;
+        case 9: break;
+        default: break;
+      }
     }
   }
 }

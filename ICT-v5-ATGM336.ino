@@ -82,6 +82,7 @@ void setup()
   sodaq_wdt_enable(WDT_PERIOD_8X);
 
   setSyncProvider(0); // make sure no sync provider is called
+  setSyncInterval(1200); // time is good for 20mins
 
   setupRfPins();
   rf_off();
@@ -104,8 +105,8 @@ void loop()
   {
     if (gps.encode(Serial.read()) && (timeStatus() == timeNotSet))  // GPS related functions need to be in here to work with tinyGPS Plus library
     {                                                               // Only sets time if already not done previously
-      DEBUGPRINT(3);
       setGPStime();   // Sets system time to GPS UTC time for sync
+      DEBUGPRINT(3);
     }
   }
 
