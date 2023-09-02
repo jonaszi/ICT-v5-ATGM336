@@ -1,6 +1,7 @@
 //#pragma GCC diagnostic error "-Wconversion"
 
 #define DEBUG_LEVEL 1 // 0 = OFF
+#define CW_DEBUG 1 // 0 = OFF
 
 /*
    HABalloon by KD2NDR, Miami Florida October 25 2018
@@ -27,7 +28,7 @@ void logString(byte message, const char* value);
 #define DEBUGVALUE(message, value) logValue(message, value)
 #define DEBUGSTRING(message, value) logString(message, value)
 #else
-#define DEBUGPRINT(message) 
+#define DEBUGPRINT(message)
 #define DEBUGVALUE(message, value)
 #define DEBUGSTRING(message, value)
 #endif
@@ -36,6 +37,9 @@ void logString(byte message, const char* value);
 #define WSPR_TONE_SPACING       146    // 146 ~1.46 Hz
 
 #define WSPR_FREQ     14097192UL      // <<<<< SET TX FREQUENCY HERE
+
+#define DEBUG_FREQ    144650000UL     // Debug CW frequency
+#define CW_DIT_MS     100             // TODO find reasonable value
 
 // Enumerations
 TinyGPSPlus gps;
@@ -73,12 +77,12 @@ ISR(TIMER1_COMPA_vect)
 
 void setup()
 {
-  #if DEBUG_LEVEL >= 1
+#if DEBUG_LEVEL >= 1
   setupSoftwareSerialLogging();
-  #endif
+#endif
 
   DEBUGPRINT(1);
-  
+
   sodaq_wdt_enable(WDT_PERIOD_8X);
 
   setSyncProvider(0); // make sure no sync provider is called
@@ -92,10 +96,12 @@ void setup()
 
   configureGps();
   configureTimerInterrupts();
-  
+
   sodaq_wdt_reset();
 
   DEBUGPRINT(2);
+
+  cwDebug(1);
 }
 
 void loop()
@@ -104,13 +110,14 @@ void loop()
   while (Serial.available() > 0)
   {
     if (gps.encode(Serial.read()) && (timeStatus() == timeNotSet))  // GPS related functions need to be in here to work with tinyGPS Plus library
-    {                                                               // Only sets time if already not done previously
+    { // Only sets time if already not done previously
       setGPStime();   // Sets system time to GPS UTC time for sync
       DEBUGPRINT(3);
+      cwDebug(2);
     }
   }
 
-  if (gps.location.isValid())
+  if (gps.location.isValid()) // Once set to true, this seems to always stay true, but not much we can do about it
   {
     TXtiming(); // Process timing
   }
@@ -142,7 +149,7 @@ void logString(byte message, const char* value)
   logTime();
   debugSerial.print(message);
   debugSerial.print("=");
-  debugSerial.println(value);  
+  debugSerial.println(value);
 }
 
 void logTime()
@@ -168,9 +175,9 @@ inline void setupRfPins()
 
 inline void setupGpsPins()
 {
-  pinMode(3, OUTPUT); 
+  pinMode(3, OUTPUT);
   digitalWrite(3, HIGH); //gps pin 5 on
-  
+
   pinMode(A0, OUTPUT);
   pinMode(A1, OUTPUT);
   pinMode(A2, OUTPUT);

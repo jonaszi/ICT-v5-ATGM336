@@ -10,10 +10,10 @@ void setGPStime() // Sets the system time from the GPS
     byte hour = gps.time.hour();
     byte minute = gps.time.minute();
     byte second = gps.time.second();
-    DEBUGVALUE(6,hour);
-    DEBUGVALUE(7,minute);
-    DEBUGVALUE(8,second);
-   
+    DEBUGVALUE(6, hour);
+    DEBUGVALUE(7, minute);
+    DEBUGVALUE(8, second);
+
     setTime(hour, minute, second, 1, 1, 2000); // (hr,min,sec,day,month,yr)
   }
 }
@@ -28,7 +28,7 @@ void loc4calc() // Determine the locator from the GPS data
   loc4[1] = 'A';
   loc4[2] = '0';
   loc4[3] = '0';
-  
+
   loc4[0] +=  lon / 2000000;
   loc4[1] +=  lat / 1000000;
   loc4[2] += (lon % 2000000) / 200000;
@@ -54,7 +54,7 @@ void call_telem() // Determine the telemetry callsign
   int d = int(alt_meters / 20);
   long e = (long)(1068L * c + d);
   long f = float(e / 17576L);
-  
+
   if (f < 10)
   {
     call_telemetry[1] = f + '0';
@@ -63,7 +63,7 @@ void call_telem() // Determine the telemetry callsign
   {
     call_telemetry[1] = f - 10 + 'A';
   }
-  
+
   long g = e - f * 17576L;
   int h = int(g / 676);
   call_telemetry[3] = h + 'A';
@@ -80,16 +80,16 @@ inline float readVcc()
   // Read 1.1V reference against AVcc
   // set the reference to Vcc and the measurement to the internal 1.1V reference
   ADMUX = _BV(REFS0) | _BV(MUX3) | _BV(MUX2) | _BV(MUX1);
- 
+
   delay(2); // Wait for Vref to settle
   ADCSRA |= _BV(ADSC); // Start conversion
-  while (bit_is_set(ADCSRA,ADSC)); // measuring
- 
-  uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH  
+  while (bit_is_set(ADCSRA, ADSC)); // measuring
+
+  uint8_t low  = ADCL; // must read ADCL first - it then locks ADCH
   uint8_t high = ADCH; // unlocks both
- 
-  long result = (high<<8) | low;
- 
+
+  long result = (high << 8) | low;
+
   result = 1125300L / result; // Calculate Vcc (in mV); 1125300 = 1.1*1023*1000
   float volts = result / 1000.0; // in V
   return volts;
@@ -121,12 +121,12 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   delay(20);
 
   float volt = readVcc();
-  DEBUGVALUE(18, volt);  
+  DEBUGVALUE(18, volt);
   volt = constrain(volt, 1.8, 3.75);
-  float batt_raw = map(volt*100, 1.8*100, 3.75*100, 0, 39); // map only works with int type
+  float batt_raw = map(volt * 100, 1.8 * 100, 3.75 * 100, 0, 39); // map only works with int type
   batt_raw = constrain(batt_raw, 0, 39);
   DEBUGVALUE(31, batt_raw);
-  
+
   if (temp < -49) temp = -49;
   if (temp > 39) temp = 39;
   int GPS = 0;
@@ -138,13 +138,13 @@ void loc_dbm_telem() // Determine the locator and dBm value for the telemetry tr
   {
     GPS = 0;
   }
-  
+
   oldlon = lon;
   oldlat = lat;
   if (Sats < 5) Sats = 0; else Sats = 1;
   int temp_raw = (int)(1024L * (temp * 0.01 + 2.73)) / 5;
   temp_raw = (int)(temp_raw - 457) / 2;
-  
+
   long x = (temp_raw * 40L ) + batt_raw;
   long y = (x * 42L) + (int)gps_speed / 2;
   long z = (y * 2L) + (int)GPS;
@@ -267,3 +267,59 @@ void GPS_VCC_off()
   digitalWrite(A2, LOW);
   digitalWrite(A3, LOW);
 }
+
+#if CW_DEBUG >= 1
+
+// 1 device started
+// 2 got GPS time
+// 3 8th minute
+
+void cwShort()
+{
+  si5351.set_freq(freq * 100, SI5351_CLK0);
+  sodaq_wdt_reset();
+  delay(CW_DIT_MS);
+  si5351.output_enable(SI5351_CLK0, 0); // Turn off the CLK0 output
+  si5351.set_clock_pwr(SI5351_CLK0, 0);  // Turn off the CLK0 clock
+  delay(CW_DIT_MS);
+}
+
+void cwLong()
+{
+  si5351.set_freq(freq * 100, SI5351_CLK0);
+  sodaq_wdt_reset();
+  delay(CW_DIT_MS * 3);
+  si5351.output_enable(SI5351_CLK0, 0); // Turn off the CLK0 output
+  si5351.set_clock_pwr(SI5351_CLK0, 0);  // Turn off the CLK0 clock
+  delay(CW_DIT_MS);
+}
+
+void cwDebug(byte message)
+{
+  if (loc4[0] != 'K' || loc4[1] != 'O' || loc4[2] != '2' || loc4[3] != '4')
+  {
+    return; // only send CW debug information in KO24 grid square
+  }
+
+  GPS_VCC_off();
+  delay(10);
+  rf_on();
+  freq = DEBUG_FREQ;
+
+  cwLong();
+  cwLong();
+  cwLong();
+
+  delay(500);
+
+  for (int i = 0; i < message; i++)
+  {
+    cwShort();
+  }
+
+  rf_off();
+  delay(5);
+  GPS_VCC_on();
+}
+
+#endif

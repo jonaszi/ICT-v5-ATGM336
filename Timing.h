@@ -46,37 +46,33 @@ void TXtiming() // Timing
   if ((timeStatus() == timeSet) && (second() == 0))
   {
     DEBUGPRINT(26);
-    setGPStime();
 
-    if (second() == 0)
+    int minute10 = minute() % 10;
+
+    DEBUGVALUE(27, minute10);
+
+    switch (minute10)
     {
-      int minute10 = minute() % 10;
+      case 0: calculateTelemetry();
+        sendWsprMessage(false);
+        break;
 
-      DEBUGVALUE(27, minute10);
+      case 1: break;
 
-      switch (minute10)
-      {
-        case 0: calculateTelemetry();
-          sendWsprMessage(false);
-          break;
+      case 2: sendWsprMessage(true);
+        break;
 
-        case 1: break;
-
-        case 2: sendWsprMessage(true);
-          break;
-
-        case 3: break;
-        case 4: sendWsprMessage(false);
-          break;
-        case 5: break;
-        case 6: sendWsprMessage(false);
-          invalidateTelemetry();
-          break;
-        case 7: break;
-        case 8: break;
-        case 9: break;
-        default: break;
-      }
+      case 3: break;
+      case 4: sendWsprMessage(false);
+        break;
+      case 5: break;
+      case 6: sendWsprMessage(false);
+        invalidateTelemetry();
+        break;
+      case 7: break;
+      case 8: cwDebug(3);
+      case 9: break;
+      default: break;
     }
   }
 }
