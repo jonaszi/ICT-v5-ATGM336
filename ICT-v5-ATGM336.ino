@@ -85,8 +85,8 @@ void setup()
 
   sodaq_wdt_enable(WDT_PERIOD_8X);
 
-  setSyncProvider(0); // make sure no sync provider is called
-  setSyncInterval(1200); // time is good for 20mins
+  setSyncProvider(0); // make sure sync provider not used
+  setSyncInterval(3600); // should not use, but set to 1hr just in case
 
   setupRfPins();
   rf_off();

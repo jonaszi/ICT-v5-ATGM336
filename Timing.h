@@ -71,7 +71,9 @@ void TXtiming() // Timing
         break;
       case 7: break;
       case 8: cwDebug(3);
-      case 9: break;
+        break;
+      case 9: setGPStime(); // refresh time from GPS every 10 mins
+        break;
       default: break;
     }
   }
