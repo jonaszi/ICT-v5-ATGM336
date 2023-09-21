@@ -212,7 +212,7 @@ void encode() // Loop through the string, transmitting one character at a time
     si5351.set_freq((freq * 100) + (tx_buffer[i] * tone_spacing), SI5351_CLK0);
     proceed = false;
     while (!proceed);
-    sodaq_wdt_reset();
+    own_wdt_reset();
   }
   si5351.output_enable(SI5351_CLK0, 0); // Turn off the CLK0 output
   si5351.set_clock_pwr(SI5351_CLK0, 0);  // Turn off the CLK0 clock
@@ -277,7 +277,7 @@ void GPS_VCC_off()
 void cwShort()
 {
   si5351.set_freq(freq * 100, SI5351_CLK0);
-  sodaq_wdt_reset();
+  own_wdt_reset();
   delay(CW_DIT_MS);
   si5351.output_enable(SI5351_CLK0, 0); // Turn off the CLK0 output
   si5351.set_clock_pwr(SI5351_CLK0, 0);  // Turn off the CLK0 clock
@@ -287,7 +287,7 @@ void cwShort()
 void cwLong()
 {
   si5351.set_freq(freq * 100, SI5351_CLK0);
-  sodaq_wdt_reset();
+  own_wdt_reset();
   delay(CW_DIT_MS * 3);
   si5351.output_enable(SI5351_CLK0, 0); // Turn off the CLK0 output
   si5351.set_clock_pwr(SI5351_CLK0, 0);  // Turn off the CLK0 clock

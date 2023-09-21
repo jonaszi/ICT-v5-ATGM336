@@ -11,7 +11,6 @@
    your needs so long as it remains open source
    and it is for non-commercial use only.
 */
-#include <Sodaq_wdt.h>
 #include <si5351.h>
 #include <JTEncode.h>
 #include <TimeLib.h>
@@ -40,6 +39,8 @@ void logString(byte message, const char* value);
 
 #define DEBUG_FREQ    144650000UL     // Debug CW frequency
 #define CW_DIT_MS     100             // TODO find reasonable value
+
+#define own_wdt_reset() __asm__ __volatile__ ("wdr")
 
 // Enumerations
 TinyGPSPlus gps;
@@ -75,6 +76,13 @@ ISR(TIMER1_COMPA_vect)
   proceed = true;
 }
 
+void(* resetFunc) (void) = 0;
+
+ISR(WDT_vect) // Use WDT interrupt rather than reset, as reset doesn't work (hangs application). Probably because of some
+{             // Arduino infrastructure code messing up WDT before the point it could be initialised
+  resetFunc();
+}
+
 void setup()
 {
 #if DEBUG_LEVEL >= 1
@@ -83,7 +91,7 @@ void setup()
 
   DEBUGPRINT(1);
 
-  sodaq_wdt_enable(WDT_PERIOD_8X);
+  own_wdt_configure();
 
   setSyncProvider(0); // make sure sync provider not used
   setSyncInterval(3600); // should not use, but set to 1hr just in case
@@ -97,7 +105,7 @@ void setup()
   configureGps();
   configureTimerInterrupts();
 
-  sodaq_wdt_reset();
+  own_wdt_reset();
 
   DEBUGPRINT(2);
 
@@ -106,7 +114,7 @@ void setup()
 
 void loop()
 {
-  sodaq_wdt_reset();
+  own_wdt_reset();
   while (Serial.available() > 0)
   {
     if (gps.encode(Serial.read()) && (timeStatus() == timeNotSet))  // GPS related functions need to be in here to work with tinyGPS Plus library
@@ -202,4 +210,13 @@ inline void configureTimerInterrupts()
   TIMSK1 = (1 << OCIE1A);
   OCR1A = WSPR_CTC;
   interrupts();
+}
+
+inline void own_wdt_configure()
+{
+  cli();
+  own_wdt_reset();
+  WDTCSR |= (1<<WDCE) | (1<<WDE); // Start timed sequence
+  WDTCSR = (1<<WDIE) | (1<<WDP3) | (1<<WDP0); // 8s
+  sei();
 }
