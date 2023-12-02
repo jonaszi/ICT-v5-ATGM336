@@ -54,10 +54,6 @@ ISR(TIMER1_COMPA_vect)
 
 void setup()
 {
-  //clock_prescale_set(clock_div_2);
-  clock_prescale_set(clock_div_4);
-  //clock_prescale_set(clock_div_8);
-
   sodaq_wdt_enable(WDT_PERIOD_8X);
   
   pinMode(3, OUTPUT); digitalWrite(3, HIGH); //gps pin 5 on
