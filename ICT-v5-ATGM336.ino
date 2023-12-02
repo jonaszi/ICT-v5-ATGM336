@@ -37,7 +37,7 @@ void logString(byte message, const char* value);
 
 #define WSPR_FREQ     14097192UL      // <<<<< SET TX FREQUENCY HERE
 
-#define DEBUG_FREQ    144650000UL     // Debug CW frequency
+#define DEBUG_FREQ    14097192UL      // Debug CW frequency (can be same as WSPR_FREQ, as only one transmission possible at the same time)
 #define CW_DIT_MS     100             // TODO find reasonable value
 
 #define own_wdt_reset() __asm__ __volatile__ ("wdr")
@@ -121,7 +121,7 @@ void loop()
     { // Only sets time if already not done previously
       setGPStime();   // Sets system time to GPS UTC time for sync
       DEBUGPRINT(3);
-      cwDebug(2);
+      cwDebug(2); // Does it interfer with GPS??
     }
   }
 

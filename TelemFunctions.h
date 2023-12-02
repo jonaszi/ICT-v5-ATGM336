@@ -294,14 +294,20 @@ void cwLong()
   delay(CW_DIT_MS);
 }
 
-void cwDebug(byte message)
+void cwDebug(byte message, bool turnOffGPS = true)
 {
-  if (loc4[0] != 'K' || loc4[1] != 'O' || loc4[2] != '2' || loc4[3] != '4')
+  if (gps.location.isValid() && (loc4[0] != 'K' || loc4[1] != 'O' || loc4[2] != '2' || loc4[3] != '4'))
   {
     return; // only send CW debug information in KO24 grid square
   }
 
-  GPS_VCC_off();
+  DEBUGPRINT(35);
+
+  if (turnOffGPS) 
+  {
+    GPS_VCC_off();
+  }
+  
   delay(10);
   rf_on();
   freq = DEBUG_FREQ;
@@ -319,7 +325,13 @@ void cwDebug(byte message)
 
   rf_off();
   delay(5);
-  GPS_VCC_on();
+
+  if (turnOffGPS) 
+  {
+    GPS_VCC_on();
+  }
+  
+  DEBUGPRINT(36);
 }
 
 #endif
